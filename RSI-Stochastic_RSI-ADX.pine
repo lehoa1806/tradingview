@@ -1,0 +1,53 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © xhoalee
+
+//@version=4
+study(title="Stochastic RSI/RSI/Strength of Trend", shorttitle="Stoch RSI/RSI/ADX", format=format.price, precision=2, resolution="")
+smoothK = input(2, "K", minval=1)
+smoothD = input(2, "D", minval=1)
+lengthRSI = input(10, "RSI Length", minval=1)
+lengthStoch = input(10, "Stochastic Length", minval=1)
+src = input(close, title="Source")
+
+// Stochastic RSI
+getStochasticRSI() =>
+	stochRsi = rsi(src, lengthRSI)
+	k = sma(stoch(stochRsi, stochRsi, stochRsi, lengthStoch), smoothK)
+	d = sma(k, smoothD)
+	[k, d]
+
+[kLine, dLine] = getStochasticRSI()
+plot(kLine, "K", color=#005A8E)
+plot(dLine, "D", color=#FF6A00)
+
+// RSI
+getRSI() =>
+	up = rma(max(change(src), 0), lengthRSI)
+	down = rma(-min(change(src), 0), lengthRSI)
+	rsiLine = down == 0 ? 100 : up == 0 ? 0 : 100 - (100 / (1 + up / down))
+rsiLine = getRSI()
+plot(rsiLine, "RSI", color=#190099, style=plot.style_line, linewidth=2)
+
+// Average directional index (ADX) - illustrates the strength of a price trend
+adxlen = input(10, title="ADX Smoothing")
+dilen = input(10, title="DI Length")
+dirmov(len) =>
+	up = change(high)
+	down = -change(low)
+	plusDM = na(up) ? na : (up > down and up > 0 ? up : 0)
+	minusDM = na(down) ? na : (down > up and down > 0 ? down : 0)
+	truerange = rma(tr, len)
+	plus = fixnan(100 * rma(plusDM, len) / truerange)
+	minus = fixnan(100 * rma(minusDM, len) / truerange)
+	[plus, minus]
+adx(dilen, adxlen) =>
+	[plus, minus] = dirmov(dilen)
+	sum = plus + minus
+	adx = 100 * rma(abs(plus - minus) / (sum == 0 ? 1 : sum), adxlen)
+sig = adx(dilen, adxlen)
+plot(sig, color=#008E24, title="ADX")
+
+// Background
+h0 = hline(75, "Upper Band")
+h1 = hline(25, "Lower Band")
+fill(h0, h1, color=#9915FF, transp=80, title="Background")
