@@ -1,0 +1,46 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © xhoalee
+
+//@version=4
+study(shorttitle="BB/MA Cross", title="Bollinger Bands/MA Cross", overlay=true, resolution="")
+shortLength = input(5, title="Short MA Length", minval=1)
+baseLength = input(20, title="Bollinger Bands Length", minval=1)
+longLength = input(100, title="Long MA Length", minval=1)
+longerLength = input(200, title="\"Longer\" MA Length", minval=1)
+src = input(close, title="Source")
+
+// MA Cross
+getMACross() =>
+    shortLine = sma(src, shortLength)
+    baseLine = sma(src, baseLength)
+    longLine = sma(src, longLength)
+    longerLine = sma(src, longerLength)
+    [shortLine, baseLine, longLine, longerLine]
+[shortLine, baseLine, longLine, longerLine] = getMACross()
+plot(shortLine, title="Short", color = #228B22)
+plot(baseLine, title="Basis", color = #0000FF)
+plot(longLine, title="Long", color = #cc7a00)
+plot(longerLine, title="Longer", color = #FF0000)
+plot(cross(shortLine, baseLine) ? shortLine : na, style = plot.style_cross, linewidth = 4)
+
+
+// Bollinger Bands
+mult = input(2.0, minval=0.001, maxval=50, title="StdDev")
+getBollingerBands(mult) =>
+    basis = sma(src, baseLength)
+    dev = mult * stdev(src, baseLength)
+    upper = basis + dev
+    lower = basis - dev
+    [upper, lower]
+[upper, lower] = getBollingerBands(mult)
+p1 = plot(upper, "Upper", transp=90)
+p2 = plot(lower, "Lower", transp=90)
+fill(p1, p2, title = "Background", color=#A4A4A4, transp=50)
+
+// Resistance, Support
+lengthRS = input(title="Resistance/Support Length", defval=10, type=input.integer)
+highRS = valuewhen(high >= highest(high, lengthRS), high, 0)
+lowRS = valuewhen(low <= lowest(low, lengthRS), low, 0)
+plot(title="Resistance", series=highRS ? highRS : na, color=highRS != highRS[1] ? na : color.olive, linewidth=2, transp=25, offset=0)
+plot(title="Support", series=lowRS ? lowRS : na, color=lowRS != lowRS[1] ? na : color.maroon, linewidth=2, transp=25, offset=0)
+
